@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8"/>
+		<title> File Upload Form</title>
+
+		<!-- Google web fonts -->
+		<link href="http://fonts.googleapis.com/css?family=PT+Sans+Narrow:400,700" rel='stylesheet' />
+
+		<!-- The main CSS file -->
+		<link href="assets/css/style.css" rel="stylesheet" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="https://apis.google.com/js/client.js"></script>
+    <script type="text/javascript">
+        
+        var PROJECT = 'project-112-177802';
+        
+        var clientId = '701111116470-55bj2lkjlkkjkljhe97di22gus5hs3.apps.googleusercontent.com';
+        
+        var apiKey = 'JHJhhguy8786875hghgjbS0nYjcMY';
+        
+        var scopes = 'https://www.googleapis.com/auth/devstorage.full_control';
+       
+        var API_VERSION = 'v1';
+       
+        var BUCKET = 'testbucket';
+        
+        var object = "";
+        
+        var GROUP =
+                'group-kjhHJKHJKH897897878jgjghg8728f21c3ff22597efbfc63ccdb8f2294d8fd2561cb9';
+        
+        var ENTITY = 'allUsers';
+        
+        var ROLE = 'READER';
+        
+        var ROLE_OBJECT = 'READER';
+        
+        var listApiRequestExplanations = {
+            'listBuckets': 'This API call queries the Google Cloud Storage API ' +
+            'for a list of buckets in your project, and returns the result as ' +
+            'a list of Google Cloud Storage buckets.',
+            'listObjects': 'This API call queries the Google Cloud Storage API ' +
+            'for a list of objects in your bucket, and returns the result as ' +
+            'a list of Google Cloud Storage objects.',
+            'listBucketsAccessControls': 'This API call queries the Google Cloud ' +
+            'Storage API for the list of access control lists on buckets in your ' +
+            'project and returns the result as a list of Google Cloud Storage ' +
+            'Access Control Lists.',
+            'listObjectsAccessControls': 'This API call queries the Google Cloud ' +
+            'Storage API for the list of access control lists on objects in your ' +
+            'bucket and returns the result as a list of Google Cloud Storage ' +
+            'Access Control Lists.',
+            'getBucket': 'This API call queries the Google Cloud Storage API ' +
+            'for a bucket in your project, and returns the result as a ' +
+            'Google Cloud Storage bucket.',
+            'getBucketAccessControls': 'This API call queries the Google Cloud ' +
+            'Storage API for the access control list on a specific bucket ' +
+            'and returns the result as a Google Cloud Storage Access Control List.',
+            'getObjectAccessControls': 'This API call queries the Google Cloud ' +
+            'Storage API for the access control list on a specific object ' +
+            'and returns the result as a Google Cloud Storage Access Control List.',
+            'insertBucket': 'This API call uses the Google Cloud Storage API ' +
+            'to insert a bucket into your project.',
+            'insertObject': 'This API call uses the Google Cloud Storage API ' +
+            'to insert an object into your bucket.',
+            'insertBucketAccessControls': 'This API uses the Google Cloud ' +
+            'Storage API to insert an access control list on a specific bucket ' +
+            'and returns the result as a Google Cloud Storage Access Control List.',
+            'insertObjectAccessControls': 'This API uses the Google Cloud ' +
+            'Storage API to insert an access control list on a specific object ' +
+            'and returns the result as a Google Cloud Storage Access Control List.',
+            'deleteBucket': 'This API uses the Google Cloud Storage API to delete ' +
+            'an empty bucket and returns an empty response to indicate success.',
+            'deleteObject': 'This API uses the Google Cloud Storage API to delete ' +
+            'an object and returns an empty response to indicate success.'
+        };
+       
+        function listBuckets() {
+            var request = gapi.client.storage.buckets.list({
+                'project': PROJECT
+            });
+            executeRequest(request, 'listBuckets');
+        }
+        
+        function listObjects() {
+            var request = gapi.client.storage.objects.list({
+                'bucket': BUCKET
+            });
+            executeRequest(request, 'listObjects');
+        }
+        
+        function listBucketsAccessControls() {
+            var request = gapi.client.storage.bucketAccessControls.list({
+                'bucket': BUCKET
+            });
+            executeRequest(request, 'listBucketsAccessControls');
+        }
+        
+        function listObjectsAccessControls() {
+            var request = gapi.client.storage.objectAccessControls.list({
+                'bucket': BUCKET,
+                'object': object
+            });
+            executeRequest(request, 'listObjectsAccessControls');
+        }
+        
+        function getBucket() {
+            var request = gapi.client.storage.buckets.get({
+                'bucket': BUCKET
+            });
+            executeRequest(request, 'getBucket');
+        }
+       
+        function getBucketAccessControls() {
+            var request = gapi.client.storage.bucketAccessControls.get({
+                'bucket': BUCKET,
+                'entity': GROUP
+            });
+            executeRequest(request, 'getBucketAccessControls');
+        }
+        
+        function getObjectAccessControls() {
+            var request = gapi.client.storage.objectAccessControls.get({
+                'bucket': BUCKET,
+                'object': object,
+                'entity': GROUP
+            });
+            executeRequest(request, 'getObjectAccessControls');
+        }
+        
+        function insertBucket() {
+            resource = {
+                'name': BUCKET
+            };
+            var request = gapi.client.storage.buckets.insert({
+                'project': PROJECT,
+                'resource': resource
+            });
+            executeRequest(request, 'insertBucket');
+        }
+        
+        function insertObject(event) {
+            try{
+                var fileData = event.target.files[0];
+            }
+            catch(e) {
+                
+                filePicker.style.display = 'block';
+                return;
+            }
+            const boundary = '-------314159265358979323846';
+            const delimiter = "\r\n--" + boundary + "\r\n";
+            const close_delim = "\r\n--" + boundary + "--";
+            var reader = new FileReader();
+            reader.readAsBinaryString(fileData);
+            reader.onload = function(e) {
+                var contentType = fileData.type || 'application/octet-stream';
+                var metadata = {
+                    'name': fileData.name,
+                    'mimeType': contentType
+                };
+                var base64Data = btoa(reader.result);
+                var multipartRequestBody =
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        JSON.stringify(metadata) +
+                        delimiter +
+                        'Content-Type: ' + contentType + '\r\n' +
+                        'Content-Transfer-Encoding: base64\r\n' +
+                        '\r\n' +
+                        base64Data +
+                        close_delim;
+                
+                var request = gapi.client.request({
+                    'path': '/upload/storage/' + API_VERSION + '/b/' + BUCKET + '/o',
+                    'method': 'POST',
+                    'params': {'uploadType': 'multipart'},
+                    'headers': {
+                        'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
+                    },
+                    'body': multipartRequestBody});
+                //Remove the current API result entry in the main-content div
+                listChildren = document.getElementById('main-content').childNodes;
+                if (listChildren.length > 1) {
+                    listChildren[1].parentNode.removeChild(listChildren[1]);
+                }
+                try{
+                    //Execute the insert object request
+                    executeRequest(request, 'insertObject');
+                    //Store the name of the inserted object
+                    object = fileData.name;
+                }
+                catch(e) {
+                    alert('An error has occurred: ' + e.message);
+                }
+            }
+        }
+        
+        function insertBucketAccessControls() {
+            resource = {
+                'entity': ENTITY,
+                'role': ROLE
+            };
+            var request = gapi.client.storage.bucketAccessControls.insert({
+                'bucket': BUCKET,
+                'resource': resource
+            });
+            executeRequest(request, 'insertBucketAccessControls');
+        }
+        
+        function insertObjectAccessControls() {
+            resource = {
+                'entity': ENTITY,
+                'role': ROLE_OBJECT
+            };
+            var request = gapi.client.storage.objectAccessControls.insert({
+                'bucket': BUCKET,
+                'object': object,
+                'resource': resource
+            });
+            executeRequest(request, 'insertObjectAccessControls');
+        }
+        
+        function deleteBucket() {
+            var request = gapi.client.storage.buckets.delete({
+                'bucket': BUCKET
+            });
+            executeRequest(request, 'deleteBucket');
+        }
+        
+        function deleteObject() {
+            var request = gapi.client.storage.objects.delete({
+                'bucket': BUCKET,
+                'object': object
+            });
+            executeRequest(request, 'deleteObject');
+        }
+       
+        function updateApiResultEntry(apiRequestName) {
+            listChildren = document.getElementById('main-content')
+                    .childNodes;
+            if (listChildren.length > 1) {
+                listChildren[1].parentNode.removeChild(listChildren[1]);
+            }
+            if (apiRequestName != 'null') {
+                window[apiRequestName].apply(this);
+            }
+        }
+        
+        function runSelectedApiRequest() {
+            var curElement = document.getElementById('api-selection-options');
+            var apiRequestName = curElement.options[curElement.selectedIndex].value;
+            updateApiResultEntry(apiRequestName);
+        }
+        
+        function addSelectionSwitchingListeners() {
+            document.getElementById('api-selection-options')
+                    .addEventListener('change',
+                    runSelectedApiRequest, false);
+        }
+        
+        function getCodeSnippet(method, params) {
+            var objConstruction = "// Declare your parameter object\n";
+            objConstruction += "var params = {};";
+            objConstruction += "\n\n";
+            var param = "// Initialize your parameters \n";
+            for (i in params) {
+                param += "params['" + i + "'] = ";
+                param += JSON.stringify(params[i], null, '\t');
+                param += ";";
+                param += "\n";
+            }
+            param += "\n";
+            var methodCall = "// Make a request to the Google Cloud Storage API \n";
+            methodCall += "var request = gapi.client." + method + "(params);";
+            return objConstruction + param + methodCall;
+        }
+       
+        function executeRequest(request, apiRequestName) {
+            request.execute(function(resp) {
+                console.log(resp);
+                var apiRequestNode = document.createElement('div');
+                apiRequestNode.id = apiRequestName;
+                var apiRequestNodeHeader = document.createElement('h2');
+                apiRequestNodeHeader.innerHTML = apiRequestName;
+                var apiRequestExplanationNode = document.createElement('div');
+                apiRequestExplanationNode.id = apiRequestName + 'RequestExplanation';
+                var apiRequestExplanationNodeHeader = document.createElement('h3');
+                apiRequestExplanationNodeHeader.innerHTML = 'API Request Explanation';
+                apiRequestExplanationNode.appendChild(apiRequestExplanationNodeHeader);
+                var apiRequestExplanationEntry = document.createElement('p');
+                apiRequestExplanationEntry.innerHTML =
+                        listApiRequestExplanations[apiRequestName];
+                apiRequestExplanationNode.appendChild(apiRequestExplanationEntry);
+                apiRequestNode.appendChild(apiRequestNodeHeader);
+                apiRequestNode.appendChild(apiRequestExplanationNode);
+                var apiRequestCodeSnippetNode = document.createElement('div');
+                apiRequestCodeSnippetNode.id = apiRequestName + 'CodeSnippet';
+                var apiRequestCodeSnippetHeader = document.createElement('h3');
+                apiRequestCodeSnippetHeader.innerHTML = 'API Request Code Snippet';
+                apiRequestCodeSnippetNode.appendChild(apiRequestCodeSnippetHeader);
+                var apiRequestCodeSnippetEntry = document.createElement('pre');
+                
+
+
+                apiRequestCodeSnippetNode.appendChild(apiRequestCodeSnippetEntry);
+                apiRequestNode.appendChild(apiRequestCodeSnippetNode);
+                var apiResponseNode = document.createElement('div');
+                apiResponseNode.id = apiRequestName + 'Response';
+                var apiResponseHeader = document.createElement('h3');
+                apiResponseHeader.innerHTML = 'API Response';
+                apiResponseNode.appendChild(apiResponseHeader);
+                var apiResponseEntry = document.createElement('pre');
+                apiResponseEntry.innerHTML = JSON.stringify(resp, null, ' ');
+                apiResponseNode.appendChild(apiResponseEntry);
+                apiRequestNode.appendChild(apiResponseNode);
+                var content = document.getElementById('main-content');
+                content.appendChild(apiRequestNode);
+            });
+        }
+        
+        function handleClientLoad() {
+            gapi.client.setApiKey(apiKey);
+            window.setTimeout(checkAuth, 1);
+        }
+        
+        function checkAuth() {
+            gapi.auth.authorize({
+                client_id: clientId,
+                scope: scopes,
+                immediate: true
+            }, handleAuthResult);
+        }
+       
+        function handleAuthResult(authResult) {
+            var authorizeButton = document.getElementById('submit-button');
+            if (authResult && !authResult.error) {
+                authorizeButton.style.visibility = 'hidden';
+                initializeApi();
+                filePicker.onchange = insertObject;
+            } else {
+                authorizeButton.style.visibility = '';
+                authorizeButton.onclick = handleAuthClick;
+            }
+        }
+       
+        function handleAuthClick(event) {
+            gapi.auth.authorize({
+                client_id: clientId,
+                scope: scopes,
+                immediate: false
+            }, handleAuthResult);
+            return false;
+        }
+        
+        function initializeApi() {
+            gapi.client.load('storage', API_VERSION);
+        }
+       
+        $(window)
+                .bind('load', function() {
+                    addSelectionSwitchingListeners();
+                    handleClientLoad();
+                });
+    </script>
+	</head>
+
+	<body>
+
+		<form id="upload" method="post" action="" enctype="multipart/form-data">
+			<div id="drop">
+				Drop Here
+
+				<a>Browse</a>
+				<input type="file" name="upl" multiple />
+				<br>
+				<dir class="clearfix"></dir>
+				
+			</div>
+
+			<ul>
+				<!-- The file uploads will be shown here -->
+			</ul>
+			
+				<input type="submit" name="submit"  value="submit" style="background-color: red"  id="submit-button" />
+
+		</form>
+
+		<footer>
+           
+        </footer>
+        
+		<!-- JavaScript Includes -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="assets/js/jquery.knob.js"></script>
+
+		<!-- jQuery File Upload Dependencies -->
+		<script src="assets/js/jquery.ui.widget.js"></script>
+		<script src="assets/js/jquery.iframe-transport.js"></script>
+		<script src="assets/js/jquery.fileupload.js"></script>
+		
+		<!-- Our main JS file -->
+		<script src="assets/js/script.js"></script>
+
+
+		<!-- Only used for the demos. Please ignore and remove. --> 
+        <script src="http://cdn.tutorialzine.com/misc/enhance/v1.js" async></script>
+
+	</body>
+</html>
